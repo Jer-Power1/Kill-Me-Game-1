@@ -95,4 +95,9 @@ public class BasicGun : MonoBehaviour
     {
         if (ammoText) ammoText.text = $"{ammoInMag}/{magSize}";
     }
+
+    public int CurrentAmmo => ammoInMag;
+    public int MagSize => magSize;
+    public bool IsReloading => reloading;
+
 }
