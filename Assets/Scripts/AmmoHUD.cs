@@ -7,38 +7,19 @@ public class AmmoHUD : MonoBehaviour
 {
     public WeaponSwitcher switcher;
     public TMP_Text label;
-    public string reloadingText = "RELOADING…";
 
     void Reset() { label = GetComponent<TMP_Text>(); }
 
-    void LateUpdate() // run after most logic & switcher updates
+    void LateUpdate()
     {
         if (!switcher || !label) return;
-
         var w = switcher.CurrentWeapon;
         if (!w) { label.text = ""; return; }
 
-        // read whichever weapon is active
-        var pistol = w.GetComponent<BasicGun>();
-        var shotgun = w.GetComponent<ShotgunGun>();
+        var gun = w.GetComponent<WeaponController>();
+        if (!gun || gun.data == null) { label.text = ""; return; }
 
-        if (pistol)
-        {
-            label.text = pistol.IsReloading
-                ? reloadingText
-                : $"{pistol.CurrentAmmo}/{pistol.MagSize}";
-            return;
-        }
-
-        if (shotgun)
-        {
-            label.text = shotgun.IsReloading
-                ? reloadingText
-                : $"{shotgun.CurrentAmmo}/{shotgun.MagSize}";
-            return;
-        }
-
-        label.text = "";
+        label.text = gun.IsReloading ? "RELOADING…" : $"{gun.CurrentAmmo}/{gun.MagSize}";
     }
 }
 

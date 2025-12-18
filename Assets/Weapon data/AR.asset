@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4a08e11d8191f24cb97b9a9a8e576ef, type: 3}
+  m_Name: AR
+  m_EditorClassIdentifier: 
+  weaponName: Weapon
+  fireMode: 1
+  fireRate: 20
+  damage: 20
+  range: 120
+  magSize: 30
+  reloadTime: 1.2
+  pellets: 1
+  spreadDegrees: 0.5
+  recoilKick: 0.6
+  shotClip: {fileID: 8300000, guid: ce462237fa1e04d4f9087f3156b55733, type: 3}
+  dryClip: {fileID: 8300000, guid: c14a12e531b12304191829f854379fdb, type: 3}
+  reloadClip: {fileID: 8300000, guid: 5579667a2ea4e16449fdc5fc050630e1, type: 3}
+  hitVfx: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
+  crosshairSprite: {fileID: 21300000, guid: fe3b9e3afa9695643af29e269331de90, type: 3}
+  crosshairSize: {x: 24, y: 24}
