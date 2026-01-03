@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public enum FireMode { SemiAuto, FullAuto }
@@ -7,6 +5,18 @@ public enum FireMode { SemiAuto, FullAuto }
 [CreateAssetMenu(menuName = "FPS/Weapon Data")]
 public class WeaponData : ScriptableObject
 {
+    void OnEnable()
+    {
+        // Capture base values once
+        if (baseDamage <= 0f)
+        {
+            baseDamage = damage;
+            baseFireRate = fireRate;
+            baseMagSize = magSize;
+            baseReserveAmmo = maxReserveAmmo;
+        }
+    }
+
     [Header("Identity")]
     public string weaponName = "Weapon";
 
@@ -17,8 +27,9 @@ public class WeaponData : ScriptableObject
     public float damage = 20f;
     public float range = 120f;
 
-    [Header("Magazine")]
-    public int magSize = 12;
+    [Header("Ammo")]
+    public int magSize = 30;
+    public int maxReserveAmmo = 120;
     public float reloadTime = 1.2f;
 
     [Header("Hitscan / Shotgun")]
@@ -28,17 +39,40 @@ public class WeaponData : ScriptableObject
     public float spreadDegrees = 0.5f;
 
     [Header("Kick / Feedback")]
-    public float recoilKick = 0.6f; // your recoil script can use this
+    public float recoilKick = 0.6f;
     public AudioClip shotClip;
     public AudioClip dryClip;
     public AudioClip reloadClip;
 
     [Header("Impact (optional)")]
-    public GameObject hitVfx; // sparks/blood etc.
+    public GameObject hitVfx;
 
     [Header("UI")]
     public Sprite crosshairSprite;
-    public Vector2 crosshairSize = new Vector2(24, 24); // optional
+    public Vector2 crosshairSize = new Vector2(24, 24);
+
+    [Header("VFX")]
+    public GameObject muzzleFlashPrefab;
+    public float muzzleFlashLifetime = 0.05f;
+
+    [Header("Upgrade")]
+    public bool upgraded;
+
+    // Stat upgrades
+    public float damageMultiplier = 5f;
+    public float fireRateMultiplier = 2f;
+    public int magBonus = 10;
+    public int reserveBonus = 60;
+
+    // Visual upgrades
+    public Material upgradedMaterial;
+    public GameObject upgradedMuzzleFlash;
+    public GameObject upgradedHitVfx;
+
+    [Header("Base Values (do not edit at runtime)")]
+    public float baseDamage;
+    public float baseFireRate;
+    public int baseMagSize;
+    public int baseReserveAmmo;
 
 }
-

@@ -1,91 +1,133 @@
-using UnityEngine;
-using TMPro; // remove if you don't use TMP
+﻿using UnityEngine;
+using System.Collections;
 
 public class RoundManager : MonoBehaviour
 {
     public EnemySpawnerPoints spawner;
+    public RoundUI roundUI;
 
-    [Header("UI (optional)")]
-    public TMP_Text roundText;
-    public TMP_Text statusText;
-
-    [Header("Round Settings")]
-    public float timeBetweenRounds = 6f;
+    [Header("Rounds")]
+    public float breakBetweenRounds = 5f;
     public int baseEnemies = 6;
     public int enemiesPerRound = 4;
 
-    [Header("Scaling")]
-    public float healthMultiplierPerRound = 0.15f;
-    public float speedMultiplierPerRound = 0.06f;
+    [Header("Enemy Scaling Per Round")]
+    public float healthIncreasePerRound = 0.25f;
+    public float speedIncreasePerRound = 0.10f;
+    public float damageIncreasePerRound = 0.20f;
 
-    int round = 0;
+    int round = 1;   // START AT ROUND 1
     int alive = 0;
-    float nextRoundTime;
-    bool waiting;
+
+    enum State { Break, InRound }
+    State state = State.Break;
+
+    Coroutine roundRoutine;
 
     void Awake()
     {
         if (!spawner) spawner = FindObjectOfType<EnemySpawnerPoints>();
-        if (spawner) spawner.onSpawned += OnSpawned;
+        if (!roundUI) roundUI = FindObjectOfType<RoundUI>(true);
+
+        if (!spawner)
+            Debug.LogError("RoundManager: No EnemySpawnerPoints found.");
+    }
+
+    void OnEnable()
+    {
+        if (spawner != null)
+            spawner.onSpawned += OnEnemySpawned;
+    }
+
+    void OnDisable()
+    {
+        if (spawner != null)
+            spawner.onSpawned -= OnEnemySpawned;
     }
 
     void Start()
     {
-        StartNextRound();
+        // Reset ScriptableObject upgrade state
+        foreach (var data in Resources.FindObjectsOfTypeAll<WeaponData>())
+        {
+            data.upgraded = false;
+        }
+
+        // Show ROUND 1 instantly
+        roundUI?.SetInstant(round);
+
+        // Start first round after break
+        StartBreakThenNextRound();
     }
 
     void Update()
     {
-        UpdateUI();
-
-        if (!waiting && spawner && spawner.RemainingToSpawn <= 0 && alive <= 0)
+        if (state == State.InRound && spawner != null)
         {
-            waiting = true;
-            nextRoundTime = Time.time + timeBetweenRounds;
-        }
-
-        if (waiting && Time.time >= nextRoundTime)
-        {
-            StartNextRound();
+            if (alive <= 0 && spawner.RemainingToSpawn <= 0)
+            {
+                StartBreakThenNextRound();
+            }
         }
     }
 
-    void StartNextRound()
+    void StartBreakThenNextRound()
     {
-        round++;
-        waiting = false;
+        if (roundRoutine != null) return;
+
+        state = State.Break;
+        roundRoutine = StartCoroutine(BreakThenStartRound());
+    }
+
+    IEnumerator BreakThenStartRound()
+    {
+        // Break before spawning
+        yield return new WaitForSeconds(breakBetweenRounds);
+
+        // Only fade/update UI AFTER the first round
+        if (round > 1 && roundUI != null)
+            yield return roundUI.FadeToRound(round);
+
+        alive = 0;
 
         int count = baseEnemies + enemiesPerRound * (round - 1);
-        spawner.QueueSpawns(count);
+        if (spawner != null)
+            spawner.QueueSpawns(count);
+
+        state = State.InRound;
+        roundRoutine = null;
     }
 
-    void OnSpawned(GameObject enemy)
+    void OnEnemySpawned(GameObject enemy)
     {
         alive++;
 
-        float hMul = 1f + healthMultiplierPerRound * (round - 1);
-        float sMul = 1f + speedMultiplierPerRound * (round - 1);
+        int r = Mathf.Max(0, round - 1);
 
         var eh = enemy.GetComponent<EnemyHealth>();
-        if (eh) eh.maxHealth *= hMul;
+        if (eh)
+        {
+            float healthMultiplier = 1f + healthIncreasePerRound * r;
+            eh.ApplyHealthMultiplier(healthMultiplier);
+            eh.onDied += OnEnemyDied;
+        }
 
         var chase = enemy.GetComponent<EnemyChase>();
-        if (chase) chase.moveSpeed *= sMul;
-
-        if (eh) eh.onDied += OnEnemyDied;
+        if (chase)
+        {
+            chase.moveSpeed = chase.baseMoveSpeed * (1f + speedIncreasePerRound * r);
+            chase.attackDamage = chase.baseAttackDamage * (1f + damageIncreasePerRound * r);
+        }
     }
 
     void OnEnemyDied()
     {
         alive = Mathf.Max(0, alive - 1);
-    }
 
-    void UpdateUI()
-    {
-        if (roundText) roundText.text = $"ROUND {round}";
-        if (statusText && spawner)
-            statusText.text = waiting
-                ? $"Next round in {Mathf.CeilToInt(nextRoundTime - Time.time)}"
-                : $"Alive: {alive}  Spawning: {spawner.RemainingToSpawn}";
+        // When a round ends, increment for NEXT round
+        if (alive == 0 && spawner.RemainingToSpawn <= 0)
+        {
+            round++;
+        }
     }
 }

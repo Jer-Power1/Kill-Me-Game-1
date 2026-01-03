@@ -1,6 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EnemySpawnerPoints : MonoBehaviour
 {
@@ -16,8 +14,8 @@ public class EnemySpawnerPoints : MonoBehaviour
     public LayerMask blockMask = ~0;
     public float clearRadius = 0.6f;
 
-    int toSpawn;
-    float nextSpawnTime;
+    int toSpawn = 0;
+    float nextSpawnTime = 0f;
 
     public System.Action<GameObject> onSpawned;
 
@@ -30,22 +28,33 @@ public class EnemySpawnerPoints : MonoBehaviour
 
     void Update()
     {
-        if (toSpawn <= 0 || !enemyPrefab || spawnPoints.Length == 0) return;
-        if (Time.time < nextSpawnTime) return;
+        // Passive spawner: only acts when RoundManager queues spawns
+        if (toSpawn <= 0) return;
+        if (!enemyPrefab || spawnPoints == null || spawnPoints.Length == 0) return;
 
+        if (Time.time < nextSpawnTime) return;
         nextSpawnTime = Time.time + spawnInterval;
 
-        if (TrySpawnOne(out var e))
+        if (TrySpawnOne(out var enemy))
         {
             toSpawn--;
-            onSpawned?.Invoke(e);
+            onSpawned?.Invoke(enemy);
+        }
+        else
+        {
+            // Fail-safe: do NOT stall rounds forever if all points are blocked/in view.
+            toSpawn--;
+            Debug.LogWarning("Spawner: failed to find valid spawn point; skipping one spawn to avoid stalling.");
         }
     }
 
+    /// <summary>
+    /// Called by RoundManager to start a round's spawns. This REPLACES any previous queued count.
+    /// </summary>
     public void QueueSpawns(int amount)
     {
-        toSpawn += Mathf.Max(0, amount);
-        if (toSpawn > 0) nextSpawnTime = Mathf.Min(nextSpawnTime, Time.time + 0.1f);
+        toSpawn = Mathf.Max(0, amount);       // reset for the round (no accumulation)
+        nextSpawnTime = Time.time + 0.1f;     // small initial delay
     }
 
     public int RemainingToSpawn => toSpawn;
@@ -60,7 +69,10 @@ public class EnemySpawnerPoints : MonoBehaviour
             Vector3 pos = sp.transform.position;
 
             if (!IsOutOfView(pos)) continue;
-            if (Physics.CheckSphere(pos, clearRadius, blockMask, QueryTriggerInteraction.Ignore)) continue;
+
+            // Ensure not spawning inside geometry/another enemy
+            if (Physics.CheckSphere(pos, clearRadius, blockMask, QueryTriggerInteraction.Ignore))
+                continue;
 
             spawned = Instantiate(enemyPrefab, pos, sp.transform.rotation);
             return true;

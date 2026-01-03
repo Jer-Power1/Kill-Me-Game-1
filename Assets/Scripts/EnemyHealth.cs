@@ -1,35 +1,56 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using System;
+using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour, IDamageable
 {
-    public float maxHealth = 60f;
-    public HitFlash hitFlash;
-    public GameObject deathVfx;
-
-    public event Action onDied;
+    public float maxHealth = 40f;
 
     float hp;
+    bool dead;
+
+    public event Action onDied;
 
     void Awake()
     {
         hp = maxHealth;
-        if (!hitFlash) hitFlash = GetComponentInChildren<HitFlash>(true);
+    }
+
+    /// <summary>
+    /// Call this ON SPAWN to apply round scaling correctly
+    /// </summary>
+    public void ApplyHealthMultiplier(float multiplier)
+    {
+        maxHealth *= multiplier;
+        hp = maxHealth; // IMPORTANT: reset current health
     }
 
     public void TakeDamage(float amount, Vector3 hitPoint, Vector3 hitNormal, GameObject source)
     {
-        hp -= amount;
-        if (hitFlash) hitFlash.Flash();
-        if (hp <= 0f) Die();
-    }
+        if (dead) return;
 
+        hp -= amount;
+        if (hp <= 0f)
+            Die();
+    }
     void Die()
     {
+        if (dead) return;
+        dead = true;
+
+        // Play death sound (detached)
+        var audio = GetComponent<EnemyAudio>();
+        if (audio)
+            audio.PlayDeath();
+
+        // Award points immediately
+        if (PointsManager.Instance)
+            PointsManager.Instance.AddPoints(100);
+
+        // Notify round manager immediately
         onDied?.Invoke();
-        if (deathVfx) Destroy(Instantiate(deathVfx, transform.position, Quaternion.identity), 2f);
+
+        // Destroy enemy immediately
         Destroy(gameObject);
     }
+
 }

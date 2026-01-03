@@ -14,17 +14,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weaponName: Pistol
   fireMode: 0
-  fireRate: 6
+  fireRate: 12
   damage: 20
   range: 120
   magSize: 12
+  maxReserveAmmo: 48
   reloadTime: 1.2
   pellets: 1
   spreadDegrees: 0.5
   recoilKick: 0.6
-  shotClip: {fileID: 8300000, guid: ce462237fa1e04d4f9087f3156b55733, type: 3}
+  shotClip: {fileID: 8300000, guid: 05a35dbcaa4d92343ad2a774551bbc5e, type: 3}
   dryClip: {fileID: 8300000, guid: 076d2b3434e686f4999c428f47920eaa, type: 3}
   reloadClip: {fileID: 8300000, guid: 5579667a2ea4e16449fdc5fc050630e1, type: 3}
   hitVfx: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
   crosshairSprite: {fileID: 21300000, guid: fe3b9e3afa9695643af29e269331de90, type: 3}
   crosshairSize: {x: 100, y: 100}
+  muzzleFlashPrefab: {fileID: 100014, guid: 5332791ebce075d4a9e56f4581e7fb47, type: 3}
+  muzzleFlashLifetime: 0.05
+  upgraded: 0
+  damageMultiplier: 50
+  fireRateMultiplier: 2
+  magBonus: 10
+  reserveBonus: 60
+  upgradedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  upgradedMuzzleFlash: {fileID: 100014, guid: 5332791ebce075d4a9e56f4581e7fb47, type: 3}
+  upgradedHitVfx: {fileID: 100004, guid: b46890100828db6429ff69c322b45893, type: 3}
+  baseDamage: 20
+  baseFireRate: 12
+  baseMagSize: 12
+  baseReserveAmmo: 48

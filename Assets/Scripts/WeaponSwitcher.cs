@@ -1,16 +1,19 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class WeaponSwitcher : MonoBehaviour
 {
     [Tooltip("Leave empty to auto-use all direct children as weapons.")]
-    public Transform[] weapons;      // each child holds a weapon script (BasicGun, ShotgunGun, etc.)
+    public Transform[] weapons;
+
     public int startIndex = 0;
     public float switchCooldown = 0.15f;
 
     int current = -1;
     float nextSwitchTime;
+
+    // Track which weapons are unlocked
+    HashSet<Transform> unlocked = new HashSet<Transform>();
 
     void Awake()
     {
@@ -21,55 +24,100 @@ public class WeaponSwitcher : MonoBehaviour
                 weapons[i] = transform.GetChild(i);
         }
 
-        // deactivate all first
-        for (int i = 0; i < weapons.Length; i++)
-            if (weapons[i]) weapons[i].gameObject.SetActive(false);
+        // Lock everything first
+        foreach (var w in weapons)
+        {
+            if (w) w.gameObject.SetActive(false);
+        }
 
-        Select(startIndex, instant: true);
+        // Unlock starting weapon
+        if (startIndex >= 0 && startIndex < weapons.Length)
+        {
+            UnlockWeapon(weapons[startIndex], equip: true);
+        }
     }
-
 
     void Update()
     {
-        if (Time.time < nextSwitchTime || weapons.Length == 0) return;
+        if (Time.time < nextSwitchTime) return;
+
+        if (unlocked.Count <= 1) return;
 
         // Scroll wheel
         float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll > 0.02f) Next();
-        else if (scroll < -0.02f) Prev();
+        if (scroll > 0.02f) SelectNext();
+        else if (scroll < -0.02f) SelectPrevious();
 
-        // Number keys 1..9
+        // Number keys
         for (int i = 0; i < Mathf.Min(weapons.Length, 9); i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
             {
-                Select(i);
-                break;
+                if (unlocked.Contains(weapons[i]))
+                    SelectWeapon(weapons[i]);
             }
         }
     }
 
-    void Next() => Select((current + 1) % weapons.Length);
-    void Prev() => Select((current - 1 + weapons.Length) % weapons.Length);
+    // ===== PUBLIC API FOR WALL BUYS =====
 
-    public void Select(int index, bool instant = false)
+    public void UnlockWeapon(Transform weapon, bool equip = false)
     {
-        if (weapons.Length == 0) return;
-        index = Mathf.Clamp(index, 0, weapons.Length - 1);
-        if (index == current) return;
+        if (!weapon || unlocked.Contains(weapon)) return;
 
-        // Holster old
+        unlocked.Add(weapon);
+        weapon.gameObject.SetActive(false);
+
+        if (equip)
+            SelectWeapon(weapon);
+    }
+
+    public void SelectWeapon(Transform weapon)
+    {
+        if (!weapon || !unlocked.Contains(weapon)) return;
+
+        // Holster current
         if (current >= 0 && current < weapons.Length && weapons[current])
             weapons[current].gameObject.SetActive(false);
 
-        // Equip new
-        current = index;
-        if (weapons[current])
-            weapons[current].gameObject.SetActive(true);
+        current = System.Array.IndexOf(weapons, weapon);
+        weapon.gameObject.SetActive(true);
 
-        nextSwitchTime = Time.time + (instant ? 0f : switchCooldown);
+        nextSwitchTime = Time.time + switchCooldown;
     }
 
-    public Transform CurrentWeapon => (current >= 0 && current < weapons.Length) ? weapons[current] : null;
-    public int CurrentIndex => current;
+    // ===== INTERNAL SWITCHING =====
+
+    void SelectNext()
+    {
+        SelectByOffset(1);
+    }
+
+    void SelectPrevious()
+    {
+        SelectByOffset(-1);
+    }
+
+    void SelectByOffset(int dir)
+    {
+        if (unlocked.Count == 0) return;
+
+        int idx = current;
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            idx = (idx + dir + weapons.Length) % weapons.Length;
+            if (unlocked.Contains(weapons[idx]))
+            {
+                SelectWeapon(weapons[idx]);
+                return;
+            }
+        }
+    }
+
+    // ===== READ-ONLY ACCESS =====
+
+    public Transform CurrentWeapon =>
+        (current >= 0 && current < weapons.Length) ? weapons[current] : null;
+
+    public bool IsUnlocked(Transform weapon) => unlocked.Contains(weapon);
 }
